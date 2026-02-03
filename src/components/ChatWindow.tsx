@@ -240,9 +240,11 @@ export default function ChatWindow({ standalone = false }: ChatWindowProps) {
                                             <span className="text-[10px] opacity-70 text-white uppercase">Especialista</span>
                                         </div>
                                     </div>
-                                    <a href={`tel:${msg.data.phone.replace(/\s/g, '')}`} className="text-xs font-mono text-white/80 hover:text-white transition-colors underline decoration-emerald-500/30">
-                                        {msg.data.phone}
-                                    </a>
+                                    {msg.data.phone && (
+                                        <a href={`tel:${msg.data.phone.replace(/\s/g, '')}`} className="text-xs font-mono text-white/80 hover:text-white transition-colors underline decoration-emerald-500/30">
+                                            {msg.data.phone}
+                                        </a>
+                                    )}
                                 </div>
                             )}
                         </div>
