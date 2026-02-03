@@ -164,8 +164,11 @@ export default function ChatWindow({ standalone = false }: ChatWindowProps) {
                 setStep(3);
                 saveChatMessage(leadId, "assistant", botResponse);
             } else {
+                // LIMPIAR TAG SIEMPRE: Incluso si ya pasó el paso de calificación, limpiar para que no se vea feo
+                botResponse = botResponse.replace(/\[CALIFICADO: .*?\]/, "").trim();
                 setMessages((prev) => [...prev, { role: "assistant", content: botResponse }]);
                 saveChatMessage(leadId, "assistant", botResponse);
+
                 // Intentar extraer el nombre de forma simple para la UI (opcional)
                 if (step === 0 && !userData.name) {
                     // El agente es autónomo ahora, no forzamos el setStep aquí tan rígidamente
