@@ -27,9 +27,11 @@ ESPECIALISTAS DISPONIBLES:
 - Rocío: Logopeda.
 - Elisa Greco: Familia, psicología neonatal/perinatal, embarazos.
 
-FORMATO DE RESPUESTA:
-Responde siempre de forma natural y empática. 
-Si detectas que ya tienes NOMBRE, TELÉFONO y MOTIVO, incluye al final de tu mensaje habitual la cadena exacta: [CALIFICADO: Nombre del Especialista]
+FORMATO DE RESPUESTA Y COMPORTAMIENTO:
+1. Responde siempre de forma natural y empática.
+2. IMPORTANTE: Cuando el paciente te haya dado su MOTIVO DE CONSULTA (y ya tengas nombre y teléfono), DEBES despedirte recomendando al especialista y AÑADIR OBLIGATORIAMENTE al final del mensaje la etiqueta: [CALIFICADO: Nombre del Especialista].
+3. SI NO PONES LA ETIQUETA [CALIFICADO: ...], EL USUARIO NO VERÁ LA TARJETA CON EL TELÉFONO. ES CRÍTICO.
+4. Ejemplo: "Perfecto, Luis. Para lo que me cuentas, te recomiendo a Patricia Soriano. Aquí tienes su contacto. [CALIFICADO: Patricia Soriano]"
 `;
 
 export async function POST(req: NextRequest) {
