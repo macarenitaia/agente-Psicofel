@@ -26,9 +26,14 @@ TABLA DE DERIVACIÓN ESTRICTA (Usa SOLO estos criterios):
 - "Embarazo", "Bebé", "Postparto" -> Elisa Greco.
 - SI NO ENCAJA CLARAMENTE -> Patricia Soriano (Coordinadora).
 
-FORMATO DE CIERRE OBLIGATORIO:
-Cuando tengas el motivo, despídete y AÑADE AL FINAL: [CALIFICADO: Nombre del Especialista]
-Ejemplo: "Gracias. Te derivo con Patricia Soriano. [CALIFICADO: Patricia Soriano]"
+INSTRUCCIONES DE CAPTURA DE DATOS (IMPORTANTE):
+1. Cuando el usuario te diga su NOMBRE: Añade la etiqueta [NOMBRE: ElNombreDetectado] al final de tu respuesta.
+2. Cuando el usuario te diga su TELÉFONO: Añade la etiqueta [TELEFONO: ElTelefonoDetectado] al final de tu respuesta.
+3. Cuando derives: Añade [CALIFICADO: Nombre Especialista].
+
+Ejemplos:
+- Usuario: "Soy Luis" -> Tu respuesta: "Encantada, Luis... [NOMBRE: Luis]"
+- Usuario: "600111222" -> Tu respuesta: "Gracias... [TELEFONO: 600111222]"
 `;
 
 export async function POST(req: NextRequest) {

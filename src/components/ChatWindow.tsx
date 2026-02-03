@@ -129,9 +129,29 @@ export default function ChatWindow({ standalone = false }: ChatWindowProps) {
 
             let botResponse = data.content;
 
-            // Detectar si el agente ha calificado al lead
+            // 1. Detectar y EXTRAER DATOS (Nombre y Teléfono)
+            const nameMatch = botResponse.match(/\[NOMBRE: (.*?)\]/);
+            const phoneMatch = botResponse.match(/\[TELEFONO: (.*?)\]/);
             const qualificationMatch = botResponse.match(/\[CALIFICADO: (.*?)\]/);
 
+            // Procesar NOMBRE
+            if (nameMatch) {
+                const capturedName = nameMatch[1];
+                botResponse = botResponse.replace(/\[NOMBRE: .*?\]/, "").trim();
+                // Actualizar estado local y Base de Datos
+                setUserData(prev => ({ ...prev, name: capturedName }));
+                updateLeadInfo(leadId, { name: capturedName });
+            }
+
+            // Procesar TELÉFONO
+            if (phoneMatch) {
+                const capturedPhone = phoneMatch[1];
+                botResponse = botResponse.replace(/\[TELEFONO: .*?\]/, "").trim();
+                setUserData(prev => ({ ...prev, phone: capturedPhone }));
+                updateLeadInfo(leadId, { phone: capturedPhone });
+            }
+
+            // 2. Lógica de Calificación (ya existente)
             if (qualificationMatch && step < 3) {
                 const specialistName = qualificationMatch[1];
                 botResponse = botResponse.replace(/\[CALIFICADO: .*?\]/, "").trim();
