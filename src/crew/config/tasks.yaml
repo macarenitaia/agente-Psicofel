@@ -1,0 +1,25 @@
+# src/crew/config/tasks.yaml
+triage_task:
+  description: >
+    Interactúa con el paciente para obtener su nombre, número de teléfono y una breve descripción de por qué busca terapia hoy.
+    No des ninguna derivación hasta que tengas estos tres datos confirmados.
+    Una vez obtenidos, analiza el motivo de consulta para identificar la especialidad necesaria (Ansiedad, Depresión, Infantil o Pareja).
+  expected_output: >
+    Un resumen detallado que incluya:
+    - Nombre del paciente
+    - Teléfono
+    - Especialidad detectada
+  agent: triage_agent
+
+derivation_task:
+  description: >
+    Basado en la especialidad detectada en la tarea anterior, proporciona al paciente el nombre y el teléfono del psicólogo correspondiente.
+    Usa la siguiente tabla lógica:
+    - Ansiedad/Estrés: Dra. Elena Rubio (600 111 222)
+    - Depresión: Dr. Marcos Sanz (600 333 444)
+    - Infantil/Adolescente: Dra. Lucía Gómez (600 555 666)
+    - Pareja: Dr. Javier López (600 777 888)
+    Si el motivo no encaja exactamente, recomienda a la Dra. Elena Rubio como responsable de admisión general.
+  expected_output: >
+    Un mensaje amable dirigido al paciente confirmando que su información ha sido recibida y proporcionando los datos del especialista sugerido para que pueda llamarle.
+  agent: triage_agent
