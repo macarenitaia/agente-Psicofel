@@ -102,57 +102,52 @@ export default function ChatWindow({ standalone = false }: ChatWindowProps) {
         return { doctor: "Patricia Soriano", phone: "+34 697 26 28 80" };
     };
 
+    const resetChat = () => {
+        localStorage.removeItem("psicofel_lead_id");
+        window.location.reload();
+    };
+
     const handleSend = async () => {
         if (!input.trim() || !leadId) return;
 
         const userMsg = input.trim();
         setInput("");
-        setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
+        const newMessages: Message[] = [...messages, { role: "user", content: userMsg }];
+        setMessages(newMessages);
         setIsTyping(true);
         saveChatMessage(leadId, "user", userMsg);
 
-        setTimeout(() => {
-            let botResponse = "";
-            let nextStep = step;
-            let newUserData = { ...userData };
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })) })
+            });
 
-            // PASO 0: NOMBRE
-            if (step === 0) {
-                const isGreeting = ["hola", "buenos dias", "buenas", "hoola", "holaa"].includes(userMsg.toLowerCase());
-                if (isGreeting && userMsg.length < 6) {
-                    botResponse = "¡Hola! Un placer saludarte. Pero aún no sé tu nombre... ¿Cómo te llamas?";
-                    nextStep = 0;
-                } else {
-                    const name = userMsg.replace(/(me llamo|soy|mi nombre es)\s+/i, "");
-                    newUserData.name = name;
-                    botResponse = `Encantada de conocerte, ${name}. ¿Me podrías facilitar un número de teléfono? Es solo para tener un registro por si se cortara la comunicación en algún momento.`;
-                    nextStep = 1;
-                    updateLeadInfo(leadId, { name: name });
-                }
-            }
-            // PASO 1: TELÉFONO
-            else if (step === 1) {
-                const containsNameCorrection = userMsg.toLowerCase().includes("llamo") || userMsg.toLowerCase().includes("nombre");
-                const containsNumbers = /\d/.test(userMsg);
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
 
-                if (containsNameCorrection && !containsNumbers) {
-                    const newName = userMsg.replace(/(me llamo|soy|mi nombre es|no, me llamo)\s+/i, "");
-                    newUserData.name = newName;
-                    botResponse = `¡Ah, perdona! Entendido, ${newName}. Ahora sí, ¿cuál es tu teléfono?`;
-                    nextStep = 1;
-                    updateLeadInfo(leadId, { name: newName });
-                } else {
-                    newUserData.phone = userMsg;
-                    botResponse = `Gracias, ${newUserData.name}. Ahora, cuéntame un poco, ¿qué es lo que te ocurre? Te escucho.`;
-                    nextStep = 2;
-                    updateLeadInfo(leadId, { phone: userMsg });
-                }
-            }
-            // PASO 2: MOTIVO / DERIVACIÓN
-            else if (step === 2) {
-                newUserData.reason = userMsg;
-                const derivation = getDerivation(userMsg);
-                botResponse = `Entiendo perfectamente, ${newUserData.name}. Por lo que me cuentas, creo que ${derivation.doctor} es la persona ideal para ayudarte. Puedes contactar directamente si lo deseas, aunque nosotros ya tenemos tu registro aquí por si fuera necesario.`;
+            let botResponse = data.content;
+
+            // Detectar si el agente ha calificado al lead
+            const qualificationMatch = botResponse.match(/\[CALIFICADO: (.*?)\]/);
+
+            if (qualificationMatch && step < 3) {
+                const specialistName = qualificationMatch[1];
+                botResponse = botResponse.replace(/\[CALIFICADO: .*?\]/, "").trim();
+
+                // Buscar datos del especialista (esto es estático por seguridad en el demo)
+                const specialists: Record<string, string> = {
+                    "Francisco Pardo": "+34 647 07 26 86",
+                    "Francesc Mengual": "+34 611 81 31 09",
+                    "Patricia Soriano": "+34 697 26 28 80",
+                    "Celia García": "+34 664 66 33 45",
+                    "Paula de Andrés": "+34 647 07 12 61",
+                    "Rocío": "+34 647 07 11 18",
+                    "Elisa Greco": "+34 647 072 089"
+                };
+
+                const phone = specialists[specialistName] || "+34 697 26 28 80";
 
                 setMessages((prev) => [
                     ...prev,
@@ -161,64 +156,51 @@ export default function ChatWindow({ standalone = false }: ChatWindowProps) {
                         role: "assistant",
                         content: "Aquí tienes los datos de contacto del especialista:",
                         type: "derivation",
-                        data: { doctor: derivation.doctor, phone: derivation.phone }
+                        data: { doctor: specialistName, phone: phone }
                     }
                 ]);
 
-                saveChatMessage(leadId, "assistant", botResponse);
-                updateLeadInfo(leadId, { assigned_specialist: derivation.doctor, status: 'Qualified' });
-                setIsTyping(false);
-                setUserData(newUserData);
+                updateLeadInfo(leadId, { assigned_specialist: specialistName, status: 'Qualified' });
                 setStep(3);
-                return;
-            }
-            // PASO 3+: CONVERSACIÓN LIBRE POST-TRIAJE
-            else {
-                const query = userMsg.toLowerCase();
-                if (query.includes("gracias") || query.includes("grtacias") || query.includes("grcias") || query.includes("perfecto") || query.includes("vale") || query.includes("ok")) {
-                    botResponse = `¡De nada, ${newUserData.name}! Un placer ayudarte. Si necesitas cualquier otra cosa, aquí estaré.`;
-                } else if (query.includes("adios") || query.includes("adiós") || query.includes("hasta luego") || query.includes("chao")) {
-                    botResponse = `¡Hasta pronto, ${newUserData.name}! Que tengas un buen día.`;
-                } else if (query.includes("por qué") || query.includes("porque") || query.includes("motivo") || query.includes("mejor")) {
-                    botResponse = "He seleccionado a este especialista basándome en las palabras clave de tu consulta para intentar ofrecerte la ayuda más específica posible. No obstante, en Psicofel todos nuestros profesionales son excelentes y podemos reajustar tu cita si lo prefieres.";
-                } else if (query.includes("psicólogo") || query.includes("psicologa") || query.includes("especialista")) {
-                    botResponse = "¡Claro! En nuestro equipo contamos con psicoterapeutas, psicólogos sanitarios y especialistas en diversas áreas (como logopedia o infantil). Si tienes alguna duda sobre la formación de un profesional concreto, estaré encantada de informarte.";
-                } else if (query.includes("donde") || query.includes("sitio") || query.includes("clinica")) {
-                    botResponse = "Estamos en Psicofel. Si deseas concertar una cita presencial u online, lo mejor es que contactes con el número que te he facilitado arriba o nos dejes un mensaje y nosotros te llamaremos.";
-                } else {
-                    const responses = [
-                        "Entiendo perfectamente. Si tienes alguna otra duda sobre nuestros servicios o especialistas, dímela sin compromiso.",
-                        "Estoy aquí para ayudarte. ¿Hay algo específico sobre la terapia o la clínica que quieras saber?",
-                        "Te escucho. Si necesitas más información sobre cómo trabajamos en Psicofel, solo tienes que preguntarme.",
-                        "Comprendo. Recuerda que puedes usar el contacto de arriba para agilizar tu primera cita."
-                    ];
-                    botResponse = responses[Math.floor(Math.random() * responses.length)];
+                saveChatMessage(leadId, "assistant", botResponse);
+            } else {
+                setMessages((prev) => [...prev, { role: "assistant", content: botResponse }]);
+                saveChatMessage(leadId, "assistant", botResponse);
+                // Intentar extraer el nombre de forma simple para la UI (opcional)
+                if (step === 0 && !userData.name) {
+                    // El agente es autónomo ahora, no forzamos el setStep aquí tan rígidamente
+                    // pero mantenemos el flujo para la UI
                 }
-                nextStep = 3;
             }
-
-            setUserData(newUserData);
-            setStep(nextStep);
-            setMessages((prev) => [...prev, { role: "assistant", content: botResponse }]);
-            saveChatMessage(leadId, "assistant", botResponse);
+        } catch (error) {
+            console.error("Error calling agent:", error);
+            setMessages((prev) => [...prev, { role: "assistant", content: "Lo siento, mi conexión con el servidor de inteligencia ha fallado. ¿Podrías intentarlo de nuevo?" }]);
+        } finally {
             setIsTyping(false);
-        }, 1200);
+        }
     };
 
     return (
         <div className={`flex flex-col h-full w-full ${standalone ? 'bg-[#1a1c20]' : 'bg-transparent'}`}>
             {/* Header */}
-            <div className="p-4 border-b border-white/10 flex items-center gap-3 bg-white/5">
-                <div className="w-10 h-10 rounded-full bg-[#4e6a85] flex items-center justify-center shadow-lg overflow-hidden border border-white/20">
-                    <User className="text-white" size={24} />
-                </div>
-                <div>
-                    <h2 className="text-sm font-bold text-white uppercase tracking-tighter">Psicofel Assist</h2>
-                    <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                        <p className="text-[10px] text-white/50 uppercase tracking-widest">En línea</p>
+            <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#e84c64] flex items-center justify-center shadow-lg overflow-hidden border border-white/20">
+                        <Bot className="text-white" size={24} />
+                    </div>
+                    <div>
+                        <h2 className="text-sm font-bold text-white uppercase tracking-tighter">Agente Autónomo Psicofel</h2>
+                        <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                            <p className="text-[10px] text-white/50 uppercase tracking-widest">IA Activa</p>
+                        </div>
                     </div>
                 </div>
+                {!standalone && (
+                    <button onClick={resetChat} className="text-[10px] text-white/40 hover:text-white/80 transition-colors uppercase tracking-widest flex items-center gap-1 border border-white/10 px-2 py-1 rounded-lg">
+                        Reiniciar chat ↺
+                    </button>
+                )}
             </div>
 
             {/* Messages */}
@@ -226,43 +208,47 @@ export default function ChatWindow({ standalone = false }: ChatWindowProps) {
                 {messages.length === 0 && (
                     <div className="flex justify-center p-10"><div className="w-6 h-6 border-2 border-[#4e6a85] border-t-transparent rounded-full animate-spin"></div></div>
                 )}
-                {messages.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2`}>
-                        <div className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user" ? "bg-[#4e6a85] text-white rounded-tr-none shadow-md" : "bg-white/10 text-white/90 rounded-tl-none border border-white/5"
-                            }`}>
-                            {msg.content}
-                            {msg.type === "derivation" && msg.data && (
-                                <div className="mt-3 bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl flex items-center justify-between gap-3 animate-in zoom-in duration-500">
-                                    <div className="flex items-center gap-2">
-                                        <Phone size={14} className="text-emerald-400" />
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-emerald-400 text-xs">{msg.data.doctor}</span>
-                                            <span className="text-[10px] opacity-70 text-white uppercase">Especialista</span>
+                {
+                    messages.map((msg, i) => (
+                        <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2`}>
+                            <div className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed ${msg.role === "user" ? "bg-[#4e6a85] text-white rounded-tr-none shadow-md" : "bg-white/10 text-white/90 rounded-tl-none border border-white/5"
+                                }`}>
+                                {msg.content}
+                                {msg.type === "derivation" && msg.data && (
+                                    <div className="mt-3 bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl flex items-center justify-between gap-3 animate-in zoom-in duration-500">
+                                        <div className="flex items-center gap-2">
+                                            <Phone size={14} className="text-emerald-400" />
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-emerald-400 text-xs">{msg.data.doctor}</span>
+                                                <span className="text-[10px] opacity-70 text-white uppercase">Especialista</span>
+                                            </div>
                                         </div>
+                                        {msg.data.phone && (
+                                            <a href={`tel:${msg.data.phone.replace(/\s/g, '')}`} className="text-xs font-mono text-white/80 hover:text-white transition-colors underline decoration-emerald-500/30">
+                                                {msg.data.phone}
+                                            </a>
+                                        )}
                                     </div>
-                                    {msg.data.phone && (
-                                        <a href={`tel:${msg.data.phone.replace(/\s/g, '')}`} className="text-xs font-mono text-white/80 hover:text-white transition-colors underline decoration-emerald-500/30">
-                                            {msg.data.phone}
-                                        </a>
-                                    )}
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
-                    </div>
-                ))}
-                {isTyping && (
-                    <div className="flex justify-start">
-                        <div className="bg-white/5 p-3 rounded-2xl flex gap-1 border border-white/5">
-                            <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce"></div>
-                            <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                            <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                    ))
+                }
+                {
+                    isTyping && (
+                        <div className="flex justify-start">
+                            <div className="bg-white/5 p-3 rounded-2xl flex gap-1 border border-white/5">
+                                <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce"></div>
+                                <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                                <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
+                    )
+                }
+            </div >
 
             {/* Input */}
-            <div className="p-4 bg-white/5 border-t border-white/10">
+            < div className="p-4 bg-white/5 border-t border-white/10" >
                 <div className="relative flex items-center gap-2">
                     <input
                         type="text"
@@ -291,7 +277,7 @@ export default function ChatWindow({ standalone = false }: ChatWindowProps) {
                         </button>
                     )}
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
