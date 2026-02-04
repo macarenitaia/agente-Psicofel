@@ -52,7 +52,7 @@ export default function ChatPage() {
                 const widgetBtn = document.querySelector('button[aria-label="Toggle Chat"]') as HTMLButtonElement;
                 if (widgetBtn) widgetBtn.click();
               }}
-              className="bg-[#e84c64] hover:bg-[#d13b52] text-white px-8 py-4 rounded-xl flex items-center justify-center gap-3 font-bold transition-all shadow-[0_10px_40px_rgba(232,76,100,0.3)] hover:scale-105 group border border-white/10"
+              className="bg-[#4e6a85] hover:bg-[#3d556c] text-white px-8 py-4 rounded-xl flex items-center justify-center gap-3 font-bold transition-all shadow-[0_10px_40px_rgba(78,106,133,0.3)] hover:scale-105 group border border-white/10"
             >
               <MessageSquare size={20} className="group-hover:rotate-12 transition-transform" />
               Chatea con nuestro Asistente Psicofel

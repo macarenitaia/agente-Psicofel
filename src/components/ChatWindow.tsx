@@ -208,7 +208,7 @@ export default function ChatWindow({ standalone = false }: ChatWindowProps) {
             {/* Header */}
             <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/5">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#e84c64] flex items-center justify-center shadow-lg overflow-hidden border border-white/20">
+                    <div className="w-10 h-10 rounded-full bg-[#4e6a85] flex items-center justify-center shadow-lg overflow-hidden border border-white/20">
                         <Bot className="text-white" size={24} />
                     </div>
                     <div>
@@ -284,7 +284,7 @@ export default function ChatWindow({ standalone = false }: ChatWindowProps) {
                     <button
                         aria-label="Send Message"
                         onClick={handleSend}
-                        className="bg-[#e84c64] p-3 rounded-xl text-white font-bold hover:bg-[#d13b52] transition-all shadow-lg shadow-[#e84c64]/20 disabled:opacity-50 group"
+                        className="bg-[#4e6a85] p-3 rounded-xl text-white font-semibold hover:bg-[#3d556c] transition-all shadow-lg shadow-[#4e6a85]/20 disabled:opacity-50 group"
                     >
                         <Send size={18} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                     </button>

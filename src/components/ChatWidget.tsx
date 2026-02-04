@@ -13,7 +13,7 @@ export default function ChatWidget() {
             <button
                 aria-label="Toggle Chat"
                 onClick={() => setIsOpen(!isOpen)}
-                className="fixed bottom-6 right-6 w-14 h-14 bg-[#e84c64] rounded-full flex items-center justify-center shadow-[0_8px_30px_rgb(232,76,100,0.3)] hover:scale-110 active:scale-95 transition-all z-50 text-white group"
+                className="fixed bottom-6 right-6 w-14 h-14 bg-[#4e6a85] rounded-full flex items-center justify-center shadow-lg shadow-[#4e6a85]/30 hover:scale-110 active:scale-95 transition-all z-50 text-white group"
             >
                 {isOpen ? (
                     <X size={28} className="animate-in fade-in zoom-in duration-300" />
